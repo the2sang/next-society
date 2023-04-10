@@ -8,14 +8,12 @@ import React, {useCallback, useMemo, useRef, useState} from "react";
 import TaxEmail = JSONPPATypes.TaxEmail;
 import {FaRegCalendarAlt, FaRegCheckCircle, FaRegAddressCard, FaRegBuilding } from "react-icons/fa";
 import "react-datepicker/dist/react-datepicker.css";
-import {format} from "date-fns";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import dayjs, { Dayjs } from 'dayjs';
-import {grid} from "@mui/system";
 
 export const getServerSideProps = async () => {
     const taxEmails: JSONPPATypes.TaxEmail[] = await getPPANotBatchAll("20210317", "20210317")
@@ -121,8 +119,8 @@ export default function Page({taxEmails}: {taxEmails: JSONPPATypes.TaxEmail[]}) 
                 <h1 className="text-white text-2xl">PPA BATCH 조회</h1>
             </header>
 
-            <main className="w-fit justify-center p-4">
-                <div className="ml-1 border border-gray-300 m-3 p-4 grid grid-cols-1 gap-5 bg-white shadow-lg rounded-lg">
+            <main className="w-fit justify-center p-2">
+                <div className="ml-1 border border-gray-300 m-3 p-2 grid grid-cols-1 gap-5 bg-white shadow-lg rounded-lg">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="grid grid-cols-2 gap-2 border border-gray-200 p-2 rounded">
                                 <div className="flex bg-white border rounded bg-gray-300 items-center p-2 ">
@@ -164,20 +162,20 @@ export default function Page({taxEmails}: {taxEmails: JSONPPATypes.TaxEmail[]}) 
                                 <div className="flex bg-white border rounded bg-gray-300 items-center p-2 ">
                                     <FaRegAddressCard className="mr-2" />
                                     <input type="text" placeholder="사업자번호"
-                                           className="bg-gray bg-white-300 max-w-full focus:outline-none text-gray-700"/>
+                                           className="bg-gray-50 border border-gray-500  dark:text-white-400  text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5 dark:bg-gray-700 dark:border-green-500"/>
                                 </div>
                                 <div className="flex bg-white border rounded bg-gray-300 items-center p-2 ">
                                    < FaRegBuilding className="mr-2" />
                                     <input type="text" placeholder="국세청 승인번호"
-                                           className="bg-gray-300 bg-white max-w-full focus:outline-none text-gray-700"/>
+                                           className="bg-gray-50 border border-gray-500  dark:text-white-400  text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5 dark:bg-gray-700 dark:border-green-500"/>
                                 </div>
                             </div>
                         </div>
                         <div className="flex justify-end">
-                            <button onClick={searchPPA} className="p-2 border w-1/6 rounded-md bg-gray-800 text-white">검 색</button>
+                            <button onClick={searchPPA} className="inline-block px-12 py-1 font-medium leading-6 text-center text-blue-700  transition bg-transparent border-2 border-blue-500 rounded-2xl shadow ripple hover:shadow-lg hover:bg-blue-200 focus:outline-none">검  색</button>
                         </div>
                 </div>
-                <div className="ag-theme-alpine" style={{height: 600, width: 1420}}>
+                <div className="ag-theme-alpine" style={{ height: 600, width: 1420}}>
                     <AgGridReact<TaxEmail>
                         ref={gridRef}
                         rowData={taxEmails}
