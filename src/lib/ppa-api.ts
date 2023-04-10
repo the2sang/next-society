@@ -1,8 +1,20 @@
 
 async function getFromEndPoint<T>(endpoint: string): Promise<T> {
-    const res = await fetch(process.env.PPA_BACKEND_URL + endpoint)
+
+    //console.log(process.env["PPA_BACKEND_URL "])
+
+    //const res = await fetch(process.env.PPA_BACKEND_URL + endpoint)
+    const res = await fetch("http://localhost:9094/api" + endpoint)
+
+    if (res.statusText === '404') throw Error ("404 Error")
+
+    if (!res.ok) throw new Error(`Error! status: ${res.status}`)
+
     const data = await res.json()
+    //console.log(data)
+
     return data
+
 }
 
 export const getPPAMailStatus = (mailStatus: string) =>

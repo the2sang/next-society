@@ -4,16 +4,21 @@ import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 import {AgGridReact} from "ag-grid-react";
 import "ag-grid-enterprise";
-import React, {useMemo, useRef, useState} from "react";
+import React, {useCallback, useMemo, useRef, useState} from "react";
 import TaxEmail = JSONPPATypes.TaxEmail;
 import {FaRegCalendarAlt, FaRegCheckCircle, FaRegAddressCard, FaRegBuilding } from "react-icons/fa";
 import "react-datepicker/dist/react-datepicker.css";
-import { ko } from "date-fns/esm/locale";
 import {format} from "date-fns";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import Select, { SelectChangeEvent } from '@mui/material/Select';
+import dayjs, { Dayjs } from 'dayjs';
+import {grid} from "@mui/system";
 
 export const getServerSideProps = async () => {
-    const taxEmails: JSONPPATypes.TaxEmail[] = await getPPANotBatchAll("20220601", "20220601")
+    const taxEmails: JSONPPATypes.TaxEmail[] = await getPPANotBatchAll("20210317", "20210317")
     return {
         props: {
             taxEmails
@@ -24,10 +29,9 @@ export const getServerSideProps = async () => {
 export default function Page({taxEmails}: {taxEmails: JSONPPATypes.TaxEmail[]}) {
 
     const gridRef = useRef<AgGridReact<TaxEmail>>(null);
-    const [rowData, setRowData] = useState([]);
+    const [rowData, setRowData] = useState<TaxEmail[]>([]);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
-
     const [selectDate, setSelectDate] = useState(new Date());
 
     //AG-GRID -------------------------------------------------------------------------
@@ -91,13 +95,25 @@ export default function Page({taxEmails}: {taxEmails: JSONPPATypes.TaxEmail[]}) 
         };
     },[]);
     //AG-GRID  --------------------------------------------------------------------------
-    const [selectedDay, setSelectedDay] = useState<Date>();
+    const [batchYn, setBatchYn] = React.useState('');
 
-    const footer = selectedDay ? (
-        <p>You selected {format(selectedDay, 'PPP')}.</p>
-    ) : (
-        <p>Please pick a day.</p>
-    );
+    const [selectedIssueDay, setSelectedIssueDay] = React.useState<Dayjs | null>(null);
+
+    const handleChange = (event: SelectChangeEvent) => {
+        setBatchYn(event.target.value);
+    };
+
+    const searchPPA =  async () => {
+
+        const dateFormat = dayjs(selectedIssueDay).format("YYYYMMDD")
+
+        //console.log(dateFormat)
+        const response =  await getPPANotBatchAll(dateFormat, dateFormat)
+        //console.log(response)
+        gridRef.current?.api.setRowData(response)
+
+    }
+
 
     return (
         <>
@@ -105,37 +121,60 @@ export default function Page({taxEmails}: {taxEmails: JSONPPATypes.TaxEmail[]}) 
                 <h1 className="text-white text-2xl">PPA BATCH 조회</h1>
             </header>
 
-            <main className="justify-center p-4">
-                <div className="w-fit ml-40 border border-gray-300 m-3 p-4 grid grid-cols-1 gap-5 bg-white shadow-lg rounded-lg">
+            <main className="w-fit justify-center p-4">
+                <div className="ml-1 border border-gray-300 m-3 p-4 grid grid-cols-1 gap-5 bg-white shadow-lg rounded-lg">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="grid grid-cols-2 gap-2 border border-gray-200 p-2 rounded">
-                                <div className="flex border rounded bg-gray-300 items-center p-2 ">
+                                <div className="flex bg-white border rounded bg-gray-300 items-center p-2 ">
                                     <FaRegCalendarAlt className="mr-2" />
-                                    <DatePicker format="yyyy-MM-dd" />
+                                    <DatePicker
+                                      value={selectedIssueDay}
+                                      onChange={(newValue) => setSelectedIssueDay(newValue)}
+                                      defaultValue={dayjs('2023-04-17')}
+                                      format="yyyy-MM-dd"
+                                      label={"발행일자"}
+                                      className="bg-white"
+                                    />
                                     {/*<input type="text" placeholder="발행일 선택"*/}
                                     {/*       className="bg-gray-300 max-w-full focus:outline-none text-gray-700"/>*/}
                                 </div>
-                                <div className="flex border rounded bg-gray-300 items-center p-2 ">
+                                <div className="flex bg-white border rounded bg-gray-300 items-center p-2 ">
                                     <FaRegCheckCircle className="mr-2" />
-                                    <input type="text" placeholder="배치처리 여부"
-                                           className="bg-gray-300 max-w-full focus:outline-none text-gray-700"/>
+                                    배치처리여부
+                                    <div>
+                                        <FormControl sx={{ m: 1, minWidth: 150 }} size="small">
+                                            <InputLabel id="default-label">선택</InputLabel>
+                                            <Select
+                                              labelId="default-label"
+                                              id="demo-select-small"
+                                              value={batchYn}
+                                              defaultValue="{1}"
+                                              onChange={handleChange}
+                                            >
+                                                <MenuItem value={1}>처리완료</MenuItem>
+                                                <MenuItem value={0}>미처리</MenuItem>
+                                            </Select>
+                                        </FormControl>
+                                    </div>
+                                    {/*<input type="text" placeholder="배치처리 여부"*/}
+                                    {/*       className="bg-gray-300 bg-white max-w-full focus:outline-none text-gray-700"/>*/}
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-2 border border-gray-200 p-2 rounded">
-                                <div className="flex border rounded bg-gray-300 items-center p-2 ">
+                            <div className="grid bg-white grid-cols-2 gap-2 border border-gray-200 p-2 rounded">
+                                <div className="flex bg-white border rounded bg-gray-300 items-center p-2 ">
                                     <FaRegAddressCard className="mr-2" />
-                                    <input type="text" placeholder="사업자번호 검색"
-                                           className="bg-gray-300 max-w-full focus:outline-none text-gray-700"/>
+                                    <input type="text" placeholder="사업자번호"
+                                           className="bg-gray bg-white-300 max-w-full focus:outline-none text-gray-700"/>
                                 </div>
-                                <div className="flex border rounded bg-gray-300 items-center p-2 ">
+                                <div className="flex bg-white border rounded bg-gray-300 items-center p-2 ">
                                    < FaRegBuilding className="mr-2" />
                                     <input type="text" placeholder="국세청 승인번호"
-                                           className="bg-gray-300 max-w-full focus:outline-none text-gray-700"/>
+                                           className="bg-gray-300 bg-white max-w-full focus:outline-none text-gray-700"/>
                                 </div>
                             </div>
                         </div>
                         <div className="flex justify-end">
-                            <button className="p-2 border w-1/6 rounded-md bg-gray-800 text-white">검 색</button>
+                            <button onClick={searchPPA} className="p-2 border w-1/6 rounded-md bg-gray-800 text-white">검 색</button>
                         </div>
                 </div>
                 <div className="ag-theme-alpine" style={{height: 600, width: 1420}}>
