@@ -1,0 +1,45 @@
+version: "3"	#docker version 3 사용
+services: 	#service들 정의
+  database: 	#service 이름
+    image: mysql	#불러올 image
+    container_name: starbucks_db_test 	#container 이름 지정
+    environment:	# 환경 설정
+      - MYSQL_DATABASE=starbucks_db_test
+      - MYSQL_ROOT_HOST=%
+      - MYSQL_ROOT_PASSWORD=1234
+    ports:		#port 지정
+      - 3306:3306
+    volumes:	#볼륨 지정
+      - ./db/data:/var/lib/mysql
+    networks:		#사용할 네트워크 지정
+      - starbucks_network_02
+  webapp:
+    build:		#image를 DockerFile 기반으로 사용한다
+      context: .	#DockerFile이 있는 디렉토리
+      dockerfile: Dockerfile	#기존에 설정해둔 DockerFile을 지정히여 build 된 jar 파일을 container에 올린다.
+    restart: always		#컨테이너 재실행
+    depends_on:		#database service가 실행된 이후에 실행
+      - database
+    ports:
+      - 8081:8081
+    container_name: app_test01
+    environment:	#환경 설정(database연결 및 profile 지정)
+      SPRING_DATASOURCE_URL: jdbc:mysql://database:3306/starbucks_db_test?useSSL=false&serverTimezone=UTC&useLegacyDatetimeCode=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 1234
+      SPRING_PROFILES_ACTIVE: dev		#사용할 profile 지정
+    networks:
+      - starbucks_network_02
+  redis:
+    image: redis:alpine
+    command: redis-server --port 6379
+    container_name: redis_boot
+    hostname: redis_boot
+    labels:
+      - "name=redis"
+      - "mode=standalone"
+    ports:
+      - 6379:6379
+
+networks:	#네트워크 설정
+  starbucks_network_02:
