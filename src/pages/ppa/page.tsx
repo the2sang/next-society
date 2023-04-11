@@ -1,5 +1,12 @@
 // @flow
-import {getPPAIssueId, getPPAMailStatus, getPPANotBatchAll, JSONPPATypes} from "@/lib/ppa-api";
+import {
+    getPPABatchAll,
+    getPPAIssueId,
+    getPPAMailStatus,
+    getPPANotBatchAll,
+    getPPASaupNo,
+    JSONPPATypes
+} from "@/lib/ppa-api";
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 import {AgGridReact} from "ag-grid-react";
@@ -31,6 +38,11 @@ export default function Page({taxEmails}: {taxEmails: JSONPPATypes.TaxEmail[]}) 
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
     const [selectDate, setSelectDate] = useState(new Date());
+
+    const [saupNo, setSaupNo] = useState<string>("");
+    const [issueId, setIssueId] = useState<string>("");
+    const [batchYn, setBatchYn] = React.useState<string>("1");
+    const [selectedIssueDay, setSelectedIssueDay] = React.useState<Dayjs | null>(null);
 
     //AG-GRID -------------------------------------------------------------------------
     let getRows = (params: []) => {
@@ -93,9 +105,9 @@ export default function Page({taxEmails}: {taxEmails: JSONPPATypes.TaxEmail[]}) 
         };
     },[]);
     //AG-GRID  --------------------------------------------------------------------------
-    const [batchYn, setBatchYn] = React.useState('');
 
-    const [selectedIssueDay, setSelectedIssueDay] = React.useState<Dayjs | null>(null);
+
+
 
     const handleChange = (event: SelectChangeEvent) => {
         setBatchYn(event.target.value);
@@ -103,14 +115,78 @@ export default function Page({taxEmails}: {taxEmails: JSONPPATypes.TaxEmail[]}) 
 
     const searchPPA =  async () => {
 
-        const dateFormat = dayjs(selectedIssueDay).format("YYYYMMDD")
+
+
+        if (saupNo.trim().length !== 0 && issueId.trim().length !== 0) {
+            alert("사업자번호와 국세청 승인번호 중 하나만 등록한 후 검색하세요")
+            return
+        }
+
+        if (saupNo.trim().length !== 0) {
+            const res = await getPPASaupNo(saupNo)
+            gridRef.current?.api.setRowData(res)
+        }
+
+        if (issueId.trim().length !== 0) {
+            const res = await getPPAIssueId(issueId)
+            gridRef.current?.api.setRowData(res)
+        }
+
+
 
         //console.log(dateFormat)
-        const response =  await getPPANotBatchAll(dateFormat, dateFormat)
+        //const response =  await getPPANotBatchAll(dateFormat, dateFormat)
         //console.log(response)
-        gridRef.current?.api.setRowData(response)
+        //gridRef.current?.api.setRowData(rowData)
 
     }
+
+    const searchPPAForDate = async () => {
+        console.log(typeof batchYn)
+        //let batchCheck:string = batchYn;
+        //console.log(selectedIssueDay)
+        if (selectedIssueDay === null) {
+            alert("발행일자를 선택하세요.")
+            return
+        }
+        const dateFormat = dayjs(selectedIssueDay).format("YYYYMMDD")
+
+        //console.log('batchYn:' + batchYn)
+
+        if (Number(batchYn) > 0) {
+            //미처리
+            console.log('처리완료')
+            const response =  await getPPABatchAll(dateFormat, dateFormat)
+
+            console.log(response)
+            if (response.length === 0) alert("검색된 데이터가 없습니다.")
+            gridRef.current?.api.setRowData(response)
+        } else {
+            //처리완료
+            console.log('미처리')
+            const response =  await getPPANotBatchAll(dateFormat, dateFormat)
+            console.log(response)
+            if (response.length === 0) alert("검색된 데이터가 없습니다.")
+            gridRef.current?.api.setRowData(response)
+        }
+
+
+
+    }
+
+
+
+    const onChangeSaupNo = (event:React.ChangeEvent<HTMLInputElement>) => {
+        //event.preventDefault()
+        console.log(event.target.value)
+        setSaupNo(event.target.value)
+    }
+
+    const onChangeIssueId = (event: React.ChangeEvent<HTMLInputElement>) => {
+        console.log(event.target.value)
+        setIssueId(event.target.value)
+    }
+
 
 
     return (
@@ -128,7 +204,7 @@ export default function Page({taxEmails}: {taxEmails: JSONPPATypes.TaxEmail[]}) 
                                     <DatePicker
                                       value={selectedIssueDay}
                                       onChange={(newValue) => setSelectedIssueDay(newValue)}
-                                      defaultValue={dayjs('2023-04-17')}
+                                      //defaultValue={dayjs('2023-04-17')}
                                       format="yyyy-MM-dd"
                                       label={"발행일자"}
                                       className="bg-white"
@@ -146,7 +222,7 @@ export default function Page({taxEmails}: {taxEmails: JSONPPATypes.TaxEmail[]}) 
                                               labelId="default-label"
                                               id="demo-select-small"
                                               value={batchYn}
-                                              defaultValue="{1}"
+                                              defaultValue="1"
                                               onChange={handleChange}
                                             >
                                                 <MenuItem value={1}>처리완료</MenuItem>
@@ -154,26 +230,45 @@ export default function Page({taxEmails}: {taxEmails: JSONPPATypes.TaxEmail[]}) 
                                             </Select>
                                         </FormControl>
                                     </div>
-                                    {/*<input type="text" placeholder="배치처리 여부"*/}
-                                    {/*       className="bg-gray-300 bg-white max-w-full focus:outline-none text-gray-700"/>*/}
+                                </div>
+                                <div className="flex justify-end">
+                                    <button onClick={searchPPAForDate}
+                                            className="inline-block px-12 py-1 font-medium leading-6 text-center
+                                    text-blue-700  transition bg-transparent border-2 border-blue-500 rounded-2xl
+                                    shadow ripple hover:shadow-lg hover:bg-blue-200 focus:outline-none">검  색</button>
                                 </div>
                             </div>
                             <div className="grid bg-white grid-cols-2 gap-2 border border-gray-200 p-2 rounded">
                                 <div className="flex bg-white border rounded bg-gray-300 items-center p-2 ">
                                     <FaRegAddressCard className="mr-2" />
-                                    <input type="text" placeholder="사업자번호"
+                                    <input type="text" placeholder="사업자번호" name="saupNo" onChange={onChangeSaupNo}
                                            className="bg-gray-50 border border-gray-500  dark:text-white-400  text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5 dark:bg-gray-700 dark:border-green-500"/>
                                 </div>
                                 <div className="flex bg-white border rounded bg-gray-300 items-center p-2 ">
                                    < FaRegBuilding className="mr-2" />
-                                    <input type="text" placeholder="국세청 승인번호"
+                                    <input type="text" placeholder="국세청 승인번호" onChange={onChangeIssueId}
                                            className="bg-gray-50 border border-gray-500  dark:text-white-400  text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5 dark:bg-gray-700 dark:border-green-500"/>
                                 </div>
+                                <div className="flex justify-end">
+                                    <button onClick={searchPPA}
+                                            className="inline-block px-12 py-1 font-medium leading-6 text-center
+                                    text-blue-700  transition bg-transparent border-2 border-blue-500 rounded-2xl
+                                    shadow ripple hover:shadow-lg hover:bg-blue-200 focus:outline-none">검  색</button>
+                                </div>
+
                             </div>
                         </div>
-                        <div className="flex justify-end">
-                            <button onClick={searchPPA} className="inline-block px-12 py-1 font-medium leading-6 text-center text-blue-700  transition bg-transparent border-2 border-blue-500 rounded-2xl shadow ripple hover:shadow-lg hover:bg-blue-200 focus:outline-none">검  색</button>
-                        </div>
+                        {/*<div className="flex justify-center">*/}
+                        {/*    <button onClick={searchPPAForDate} */}
+                        {/*            className="justify-start inline-block px-12 py-1 font-medium leading-6 text-center text-blue-700 */}
+                        {/*            transition bg-transparent border-2 border-blue-500 rounded-2xl shadow ripple hover:shadow-lg */}
+                        {/*            hover:bg-blue-200 focus:outline-none">검  색</button>*/}
+                        {/*    <button onClick={searchPPA} */}
+                        {/*            className="justify-end inline-block px-12 py-1 font-medium leading-6 text-center */}
+                        {/*            text-blue-700  transition bg-transparent border-2 border-blue-500 rounded-2xl */}
+                        {/*            shadow ripple hover:shadow-lg hover:bg-blue-200 focus:outline-none">검  색</button>*/}
+                        {/*</div>*/}
+
                 </div>
                 <div className="ag-theme-alpine" style={{ height: 600, width: 1420}}>
                     <AgGridReact<TaxEmail>
